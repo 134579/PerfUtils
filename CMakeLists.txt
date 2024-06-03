@@ -2,6 +2,8 @@ cmake_minimum_required (VERSION 3.11)
 
 project(PerfUtils VERSION 0.1.0 LANGUAGES CXX C)
 
+option(BUILD_TESTS "Build test programs" OFF)
+
 ################################################################################
 ## Dependencies ################################################################
 ################################################################################
@@ -95,46 +97,48 @@ install(
 
 ################################################################################
 ## Tests #######################################################################
-################################################################################
-include(FetchContent)
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        2172c08c9241ab0cc8857980bbe925fe1a55cf3c
-)
-
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-    FetchContent_Populate(googletest)
-    add_subdirectory(
-        ${googletest_SOURCE_DIR}
-        ${googletest_BINARY_DIR}
-        EXCLUDE_FROM_ALL
+################################################################################    
+if(BUILD_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        2172c08c9241ab0cc8857980bbe925fe1a55cf3c
     )
+
+    FetchContent_GetProperties(googletest)
+    if(NOT googletest_POPULATED)
+        FetchContent_Populate(googletest)
+        add_subdirectory(
+            ${googletest_SOURCE_DIR}
+            ${googletest_BINARY_DIR}
+            EXCLUDE_FROM_ALL
+        )
+    endif()
+
+    include(GoogleTest)
+
+    # Enables the add_test macro, which adds the test to the list to run.
+    enable_testing()
+
+    add_executable(UtilTest src/UtilTest.cc)
+    target_link_libraries(UtilTest PerfUtils gmock_main)
+
+    gtest_discover_tests(UtilTest)
+
+    add_executable(TimeTraceTest src/TimeTraceTest.cc)
+    target_link_libraries(TimeTraceTest PerfUtils)
+    add_test(TimeTraceTest TimeTraceTest)
+
+    add_executable(timetrace_wrapper_test cwrapper/timetrace_wrapper_test.c)
+    target_compile_features(timetrace_wrapper_test PRIVATE c_std_99)
+    target_link_libraries(timetrace_wrapper_test PerfUtils)
+    add_test(timetrace_wrapper_test timetrace_wrapper_test)
+
+    add_executable(cycles_wrapper_test cwrapper/cycles_wrapper_test.c)
+    target_link_libraries(cycles_wrapper_test PerfUtils)
+    add_test(cycles_wrapper_test cycles_wrapper_test)
 endif()
-
-include(GoogleTest)
-
-# Enables the add_test macro, which adds the test to the list to run.
-enable_testing()
-
-add_executable(UtilTest src/UtilTest.cc)
-target_link_libraries(UtilTest PerfUtils gmock_main)
-
-gtest_discover_tests(UtilTest)
-
-add_executable(TimeTraceTest src/TimeTraceTest.cc)
-target_link_libraries(TimeTraceTest PerfUtils)
-add_test(TimeTraceTest TimeTraceTest)
-
-add_executable(timetrace_wrapper_test cwrapper/timetrace_wrapper_test.c)
-target_compile_features(timetrace_wrapper_test PRIVATE c_std_99)
-target_link_libraries(timetrace_wrapper_test PerfUtils)
-add_test(timetrace_wrapper_test timetrace_wrapper_test)
-
-add_executable(cycles_wrapper_test cwrapper/cycles_wrapper_test.c)
-target_link_libraries(cycles_wrapper_test PerfUtils)
-add_test(cycles_wrapper_test cycles_wrapper_test)
 
 ################################################################################
 ## Check #######################################################################
